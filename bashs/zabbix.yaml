@@ -1,0 +1,103 @@
+---
+- name: Install Zabbix Server
+  hosts: all
+  become: yes
+  vars:
+    zabbix_version: 5.4
+    db_name: zabbix
+    db_user: zabbix
+    db_password: mypassword
+  tasks:
+  - name: Install prerequisites
+    apt:
+      name: ['nginx', 'php-fpm', 'php-mysql', 'php-mbstring', 'php-xml', 'php-gd', 'mysql-server']
+      state: present
+
+  - name: Install Zabbix repository
+    apt_key:
+      url: https://repo.zabbix.com/zabbix-official-repo.key
+      state: present
+
+  - name: Add Zabbix repository to sources.list
+    apt_repository:
+      repo: 'deb https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/ {{ ansible_distribution_release }} main'
+      state: present
+
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+
+  - name: Install Zabbix server and agent
+    apt:
+      name: ['zabbix-server-mysql', 'zabbix-frontend-php', 'zabbix-apache-conf', 'zabbix-agent']
+      state: present
+
+  - name: Configure MySQL for Zabbix
+    mysql_user:
+      name: "{{ db_user }}"
+      password: "{{ db_password }}"
+      login_password: ""
+      state: present
+
+  - name: Create Zabbix database
+    mysql_db:
+      name: "{{ db_name }}"
+      login_user: root
+      login_password: ""
+      state: present
+
+  - name: Import Zabbix schema
+    mysql_db:
+      name: "{{ db_name }}"
+      state: import
+      target: /usr/share/doc/zabbix-server-mysql/create.sql.gz
+
+  - name: Configure Zabbix server
+    lineinfile:
+      path: /etc/zabbix/zabbix_server.conf
+      regexp: "^DBPassword="
+      line: "DBPassword={{ db_password }}"
+    notify:
+      - restart zabbix-server
+
+  - name: Configure PHP for Zabbix
+    lineinfile:
+      path: /etc/php/7.4/fpm/php.ini
+      regexp: "^max_execution_time"
+      line: "max_execution_time = 300"
+
+  - name: Configure Nginx for Zabbix
+    copy:
+      src: files/zabbix.conf
+      dest: /etc/nginx/sites-available/zabbix.conf
+    notify:
+      - restart nginx
+
+  - name: Enable Zabbix site
+    file:
+      src: /etc/nginx/sites-available/zabbix.conf
+      dest: /etc/nginx/sites-enabled/zabbix.conf
+      state: link
+
+  - name: Start and enable services
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    with_items:
+      - zabbix-server
+      - zabbix-agent
+      - php7.4-fpm
+      - nginx
+
+  handlers:
+    - name: restart zabbix-server
+      service:
+        name: zabbix-server
+        state: restarted
+
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted
+
