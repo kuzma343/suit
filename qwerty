@@ -1,0 +1,21 @@
+procedure TForm1.Button1Click(Sender: TObject);
+var
+  Canvas: TCanvas;
+  X, Y, Size: Integer;
+begin
+  Canvas := Self.Canvas;
+  Size := 100;
+  X := Self.ClientWidth div 2;
+  Y := Self.ClientHeight div 2;
+
+  Canvas.Pen.Color := clGreen;
+  Canvas.Brush.Color := clGreen;
+
+  Canvas.MoveTo(X, Y - Size);
+  Canvas.LineTo(X - Size, Y + Size);
+  Canvas.LineTo(X + Size, Y + Size);
+  Canvas.LineTo(X, Y - Size);
+
+  Canvas.Brush.Color := clYellow;
+  Canvas.Ellipse(X - Size div 2, Y - Size div 2, X + Size div 2, Y + Size div 2);
+end;
