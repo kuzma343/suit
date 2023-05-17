@@ -1,0 +1,27 @@
+procedure TForm1.Timer1Timer(Sender: TObject);
+
+begin
+
+Button1.Top := Button1.Top - 30;
+
+Button2.Top := Button2.Top + 30;
+
+end;
+
+
+procedure TForm1.Button3Click(Sender: TObject);
+
+begin
+
+Timer1.Enabled := False;
+
+end;
+
+
+procedure TForm1.Button4Click(Sender: TObject);
+
+begin
+
+Timer1.Enabled := True;
+
+end;
